@@ -1,0 +1,154 @@
+1.	Определить алгоритм с наилучшим сжатием
+
+root@otssTestServer:/home/lx/git/virtlab/zfs# vagrant ssh server
+[vagrant@server ~]$ sudo -i
+[root@server ~]# zpool create zfsCompress /dev/sd[b-e]
+[root@server ~]# zfs create zfsCompress/gzip
+[root@server ~]# zfs set compression=gzip-9 zfsCompress/gzip
+[root@server ~]# for compress in lz4 lzjb zle; do zfs create zfsCompress/$compress; zfs set compression=$compress zfsCompress/$compress;done
+[root@server ~]# zfs get compression
+NAME              PROPERTY     VALUE     SOURCE
+zfsCompress       compression  off       default
+zfsCompress/gzip  compression  gzip-9    local
+zfsCompress/lz4   compression  lz4       local
+zfsCompress/lzjb  compression  lzjb      local
+zfsCompress/zle   compression  zle       local
+[root@server ~]# ll /zfsCompress/lz4
+total 0
+[root@server ~]# cd /zfsCompress
+[root@server zfsCompress]# wget "https://s654sas.storage.yandex.net/rdisk/21a43240ba607158353e9965e3691aaa193578aae5ab9eb17920803af09b36ed/60de3a51/y55_xo2h9ci0ZVHx-yF07hLbujCw3OiZ_rN_0P4OOz3E2WgOUYrNqMXLjzFvbvhSdw9Eh4Pnr-79rJtWhtonDg==?uid=0&filename=pg2600.txt&disposition=attachment&hash=eDAKUmV8zwHI4h1rjT9/uFjYmt8br2InkKKu9iWhPrLvzdveWKRhDWOyk7YmaYGgq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=text%2Fplain&owner_uid=152382055&fsize=1209374&hid=762efbd813ac679c9446faa3a2ec2e63&media_type=document&tknv=v2&rtoken=Db87PZAuaZgm&force_default=no&ycrid=na-ad402b94b559542cb09b673652df8361-downloader24h&ts=5c616ed567640&s=c71a87f82de65bf16e273bfc9a495857589fafa850ee8e59c40681d3152a7103&pb=U2FsdGVkX18NIP6XJkRaFY6wcTLDi9NqAhsbf5c60ca1wlAzVsonFuaeo1q2hCA02DSeD3wJYsjNuLeWw2rJbAgLNmzOdDE2b-knVD_H6YI" -O War_and_Peace.txt
+--2021-07-01 17:58:05--  https://s654sas.storage.yandex.net/rdisk/21a43240ba607158353e9965e3691aaa193578aae5ab9eb17920803af09b36ed/60de3a51/y55_xo2h9ci0ZVHx-yF07hLbujCw3OiZ_rN_0P4OOz3E2WgOUYrNqMXLjzFvbvhSdw9Eh4Pnr-79rJtWhtonDg==?uid=0&filename=pg2600.txt&disposition=attachment&hash=eDAKUmV8zwHI4h1rjT9/uFjYmt8br2InkKKu9iWhPrLvzdveWKRhDWOyk7YmaYGgq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=text%2Fplain&owner_uid=152382055&fsize=1209374&hid=762efbd813ac679c9446faa3a2ec2e63&media_type=document&tknv=v2&rtoken=Db87PZAuaZgm&force_default=no&ycrid=na-ad402b94b559542cb09b673652df8361-downloader24h&ts=5c616ed567640&s=c71a87f82de65bf16e273bfc9a495857589fafa850ee8e59c40681d3152a7103&pb=U2FsdGVkX18NIP6XJkRaFY6wcTLDi9NqAhsbf5c60ca1wlAzVsonFuaeo1q2hCA02DSeD3wJYsjNuLeWw2rJbAgLNmzOdDE2b-knVD_H6YI
+Resolving s654sas.storage.yandex.net (s654sas.storage.yandex.net)... 93.158.158.130
+Connecting to s654sas.storage.yandex.net (s654sas.storage.yandex.net)|93.158.158.130|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1209374 (1.2M) [text/plain]
+Saving to: 'War_and_Peace.txt'
+
+War_and_Peace.txt                       100%[============================================================================>]   1.15M  4.71MB/s    in 0.2s
+
+2021-07-01 17:58:05 (4.71 MB/s) - 'War_and_Peace.txt' saved [1209374/1209374]
+
+[root@server zfsCompress]# cp ./War_and_Peace.txt /zfsCompress/gzip/
+[root@server zfsCompress]# cp ./War_and_Peace.txt /zfsCompress/lz4/
+[root@server zfsCompress]# cp ./War_and_Peace.txt /zfsCompress/lzjb/
+[root@server zfsCompress]# cp ./War_and_Peace.txt /zfsCompress/zle
+[root@server zfsCompress]# find /zfsCompress/ -type f
+/zfsCompress/lz4/War_and_Peace.txt
+/zfsCompress/gzip/War_and_Peace.txt
+/zfsCompress/War_and_Peace.txt
+/zfsCompress/zle/War_and_Peace.txt
+/zfsCompress/lzjb/War_and_Peace.txt
+[root@server zfsCompress]# zfs list
+NAME               USED  AVAIL     REFER  MOUNTPOINT
+zfsCompress       4.75M  3.62G     1.28M  /zfsCompress
+zfsCompress/gzip   478K  3.62G      478K  /zfsCompress/gzip
+zfsCompress/lz4    772K  3.62G      772K  /zfsCompress/lz4
+zfsCompress/lzjb   920K  3.62G      920K  /zfsCompress/lzjb
+zfsCompress/zle   1.18M  3.62G     1.18M  /zfsCompress/zle
+
+
+2.	 Определить настройки pool’a
+
+[root@server zfsCompress]# cd ~
+[root@server ~]# wget "https://s314vla.storage.yandex.net/rdisk/c340429257d514e0650921caa57cf373b6874505a43e6be1c262f3c2a3437bdc/60de3b09/32RThlEBa5ILS5KnIMNz6D6CDh_ZwzrzvttzG3Z1mYO156m6RSoEZpzw1wyR_JQQ8n-1oPiYlDJ6UXha6myBAA==?uid=152382055&filename=zfs_task1.tar.gz&disposition=attachment&hash=&limit=0&content_type=application%2Fx-gzip&owner_uid=152382055&fsize=7275140&hid=4bbbdf44de8f15e8c068e444377f736f&media_type=compressed&tknv=v2&etag=157e13606ae3211a54f6c70e9a62cfd1&rtoken=MV5jtxaTS1KG&force_default=yes&ycrid=na-f3f10ef81e749586c4f299ef1caff334-downloader6h&ts=5c616f84e1440&s=349175a08380fc91f3951e81cd0a59c0deb79e1764cc9e04499f6f0bcd043e45&pb=U2FsdGVkX1_H6Rk5YCva6v_q4xYLVmhxAST0ss8mMkeox5BINGT_gxaTwaJKg6S5CCEPt2H63JeZJRAty5RgIHq49lcnLKMaKXU70Lp5FVA" -O zfs_task1.tar.gz
+--2021-07-01 18:01:18--  https://s314vla.storage.yandex.net/rdisk/c340429257d514e0650921caa57cf373b6874505a43e6be1c262f3c2a3437bdc/60de3b09/32RThlEBa5ILS5KnIMNz6D6CDh_ZwzrzvttzG3Z1mYO156m6RSoEZpzw1wyR_JQQ8n-1oPiYlDJ6UXha6myBAA==?uid=152382055&filename=zfs_task1.tar.gz&disposition=attachment&hash=&limit=0&content_type=application%2Fx-gzip&owner_uid=152382055&fsize=7275140&hid=4bbbdf44de8f15e8c068e444377f736f&media_type=compressed&tknv=v2&etag=157e13606ae3211a54f6c70e9a62cfd1&rtoken=MV5jtxaTS1KG&force_default=yes&ycrid=na-f3f10ef81e749586c4f299ef1caff334-downloader6h&ts=5c616f84e1440&s=349175a08380fc91f3951e81cd0a59c0deb79e1764cc9e04499f6f0bcd043e45&pb=U2FsdGVkX1_H6Rk5YCva6v_q4xYLVmhxAST0ss8mMkeox5BINGT_gxaTwaJKg6S5CCEPt2H63JeZJRAty5RgIHq49lcnLKMaKXU70Lp5FVA
+Resolving s314vla.storage.yandex.net (s314vla.storage.yandex.net)... 77.88.33.242
+Connecting to s314vla.storage.yandex.net (s314vla.storage.yandex.net)|77.88.33.242|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 7275140 (6.9M) [application/x-gzip]
+Saving to: 'zfs_task1.tar.gz'
+
+zfs_task1.tar.gz                        100%[============================================================================>]   6.94M  17.0MB/s    in 0.4s
+
+2021-07-01 18:01:19 (17.0 MB/s) - 'zfs_task1.tar.gz' saved [7275140/7275140]
+
+[root@server ~]# tar xvzf zfs_task1.tar.gz
+zpoolexport/
+zpoolexport/filea
+zpoolexport/fileb
+[root@server ~]# zpool import -d ${PWD}/zpoolexport/
+   pool: otus
+     id: 6554193320433390805
+  state: ONLINE
+ action: The pool can be imported using its name or numeric identifier.
+ config:
+
+        otus                         ONLINE
+          mirror-0                   ONLINE
+            /root/zpoolexport/filea  ONLINE
+            /root/zpoolexport/fileb  ONLINE
+[root@server ~]# zpool import -d ${PWD}/zpoolexport/ otus
+[root@server ~]# zpool list
+NAME          SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
+otus          480M  2.09M   478M        -         -     0%     0%  1.00x    ONLINE  -
+zfsCompress  3.75G  4.82M  3.75G        -         -     0%     0%  1.00x    ONLINE  -
+[root@server ~]# zpool status otus
+  pool: otus
+ state: ONLINE
+  scan: none requested
+config:
+
+        NAME                         STATE     READ WRITE CKSUM
+        otus                         ONLINE       0     0     0
+          mirror-0                   ONLINE       0     0     0
+            /root/zpoolexport/filea  ONLINE       0     0     0
+            /root/zpoolexport/fileb  ONLINE       0     0     0
+
+errors: No known data errors
+[root@server ~]# zfs get recordsize | grep otus
+otus              recordsize  128K     local
+otus/hometask2    recordsize  128K     inherited from otus
+[root@server ~]# zfs get compression | grep otus
+otus              compression  zle       local
+otus/hometask2    compression  zle       inherited from otus
+[root@server ~]# zfs get checksum
+NAME              PROPERTY  VALUE      SOURCE
+otus              checksum  sha256     local
+otus/hometask2    checksum  sha256     inherited from otus
+zfsCompress       checksum  on         default
+zfsCompress/gzip  checksum  on         default
+zfsCompress/lz4   checksum  on         default
+zfsCompress/lzjb  checksum  on         default
+zfsCompress/zle   checksum  on         default
+
+
+3.	Найти сообщение от преподавателей 
+
+[root@server ~]# wget "https://s748sas.storage.yandex.net/rdisk/8191d6f7b26878740cd8e617b08f6754f1118d1f06c5d1177c4f685dca9f1ba8/60df2a1b/32RThlEBa5ILS5KnIMNz6MXgA5CcM_Ozd3aXp0BLbC7tSERnxEWItPmRPSpRcdRNRa85C2bcjin9W40UMvWWYA==?uid=0&filename=otus_task2.file&disposition=attachment&hash=1%2B5CUXlFM4Y1f7TB0TEQ6lMeQ1ia0mp6Dr0yAuQ/MAM2wI7YWnDqW%2BMb5IrCRj0uq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=application%2Foctet-stream&owner_uid=152382055&fsize=5432736&hid=f82968c912a8018535e343f40bdca213&media_type=data&tknv=v2&rtoken=X7apFTHfzbhP&force_default=no&ycrid=na-14b88a5f31e9026c2cd5f6ee1c637724-downloader6f&ts=5c625383a7cc0&s=19a8b59b6d7b9d42708219473bd247778438a184a9c8e984562e3195dc87367f&pb=U2FsdGVkX1_aVlT2G12h3WmJQvR2lPUU0Gbgh0oe1hApuKpjilYS8AYEUKJUh40-TPr0dKMp4XUSM4CdbaSqLibpkMGfvHx6T5KCecgEW2E" -O otus_task2.file
+--2021-07-02 11:01:20--  https://s748sas.storage.yandex.net/rdisk/8191d6f7b26878740cd8e617b08f6754f1118d1f06c5d1177c4f685dca9f1ba8/60df2a1b/32RThlEBa5ILS5KnIMNz6MXgA5CcM_Ozd3aXp0BLbC7tSERnxEWItPmRPSpRcdRNRa85C2bcjin9W40UMvWWYA==?uid=0&filename=otus_task2.file&disposition=attachment&hash=1%2B5CUXlFM4Y1f7TB0TEQ6lMeQ1ia0mp6Dr0yAuQ/MAM2wI7YWnDqW%2BMb5IrCRj0uq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=application%2Foctet-stream&owner_uid=152382055&fsize=5432736&hid=f82968c912a8018535e343f40bdca213&media_type=data&tknv=v2&rtoken=X7apFTHfzbhP&force_default=no&ycrid=na-14b88a5f31e9026c2cd5f6ee1c637724-downloader6f&ts=5c625383a7cc0&s=19a8b59b6d7b9d42708219473bd247778438a184a9c8e984562e3195dc87367f&pb=U2FsdGVkX1_aVlT2G12h3WmJQvR2lPUU0Gbgh0oe1hApuKpjilYS8AYEUKJUh40-TPr0dKMp4XUSM4CdbaSqLibpkMGfvHx6T5KCecgEW2E
+Resolving s748sas.storage.yandex.net (s748sas.storage.yandex.net)... 5.255.211.216
+Connecting to s748sas.storage.yandex.net (s748sas.storage.yandex.net)|5.255.211.216|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5432736 (5.2M) [application/octet-stream]
+Saving to: 'otus_task2.file'
+
+otus_task2.file                         100%[============================================================================>]   5.18M  1.58MB/s    in 3.7s
+
+2021-07-02 11:01:24 (1.41 MB/s) - 'otus_task2.file' saved [5432736/5432736]
+
+[root@server ~]# zfs receive otus/messages < otus_task2.file
+[root@server ~]# zfs list
+NAME               USED  AVAIL     REFER  MOUNTPOINT
+otus              4.93M   347M       25K  /otus
+otus/hometask2    1.88M   347M     1.88M  /otus/hometask2
+otus/messages     2.83M   347M     2.83M  /otus/messages
+zfsCompress       4.75M  3.62G     1.28M  /zfsCompress
+zfsCompress/gzip   478K  3.62G      478K  /zfsCompress/gzip
+zfsCompress/lz4    772K  3.62G      772K  /zfsCompress/lz4
+zfsCompress/lzjb   920K  3.62G      920K  /zfsCompress/lzjb
+zfsCompress/zle   1.18M  3.62G     1.18M  /zfsCompress/zle
+[root@server ~]# ll /otus/messages/
+total 2590
+-rw-r--r--. 1 root    root          0 May 15  2020 10M.file
+-rw-r--r--. 1 root    root     309987 May 15  2020 Limbo.txt
+-rw-r--r--. 1 root    root     509836 May 15  2020 Moby_Dick.txt
+-rw-r--r--. 1 root    root    1209374 May  6  2016 War_and_Peace.txt
+-rw-r--r--. 1 root    root     727040 May 15  2020 cinderella.tar
+-rw-r--r--. 1 root    root         65 May 15  2020 for_examaple.txt
+-rw-r--r--. 1 root    root          0 May 15  2020 homework4.txt
+drwxr-xr-x. 3 vagrant vagrant       4 Dec 18  2017 task1
+-rw-r--r--. 1 root    root     398635 May 15  2020 world.sql
+[root@server ~]# find /otus/messages/ -name secret_message
+/otus/messages/task1/file_mess/secret_message
+[root@server ~]# cat /otus/messages/task1/file_mess/secret_message
+https://github.com/sindresorhus/awesome
